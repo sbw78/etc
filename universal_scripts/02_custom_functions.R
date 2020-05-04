@@ -5,60 +5,6 @@
 # improve as a programmer.  DO NOT PUT FUNCTIONS USED FOR ONLY ONE STUDY IN THIS 
 # FILE.
 
-# Set session start time
-.Start.time <- as.numeric(Sys.time())
-
-# Get first 10 and last 10 rows
-ht <- function(d) {
-  rbind(head(d,10),tail(d,10))
-}
-
-# Get first 5 each of rows, columns
-hh <- function(d) {
-  d[1:5,1:5]
-}
-
-# Get last element of a vector or list
-last <- function(x) {
-  x[length(x)]
-}
-
-# Install packages
-install_load_packages <- function() {
-  packages <- get("packages", envir = globalenv())
-  github_packages <- get("github_packages", envir = globalenv())
-
-  installed_packages <- packages %in% rownames(utils::installed.packages())
-  installed_github_packages <- github_packages$package %in% rownames(utils::installed.packages())
-  
-  if (any(installed_packages == FALSE)) {
-    utils::install.packages(packages[!installed_packages])
-  } else {
-    message("\n ...CRAN packages were already installed.\n")
-  }
-  
-  if (any(installed_github_packages == FALSE)) {
-    remotes::install_github(github_packages$repo[!installed_github_packages])
-  } else {
-    message("\n ...Github packages were already installed.\n")
-  }
-  
-  attached <- search()
-  attached_packages <- attached[grepl("package", attached)]
-  need_to_attach <- c(packages[which(!packages %in% gsub("package", "", attached_packages))],
-                      github_packages$package[which(
-                        !github_packages$package %in% gsub(
-                          "package", "", attached_packages))])
-  packages <- c(packages, github_packages$package)
-  
-  if (length(need_to_attach > 0)) {
-    invisible(lapply(packages, require, character.only = TRUE))
-  } else {
-    message("\n ...Packages were already loaded.\n")
-  }
-  rm(packages, github_packages, envir = globalenv())
-} 
-
 # Create regex of vector -------------------------------------------------------
 regex_build <- function(list, modifier = "single") {
   if (modifier == "single") {
@@ -152,8 +98,7 @@ ci_df <- function(.data, .summary_var, ..., ci = 0.95, groups_col = FALSE) {
 # xmin = ci_low
 # xmax = ci_high
 # y = group_var
-forestplot_new <- function(d, .measure_var, .group_var,
-                           xlab = NULL, ylab = NULL, xintercept = NULL){
+forestplot_new <- function(d, .measure_var, .group_var, xlab=NULL, ylab=NULL, xintercept = NULL){
   require(ggplot2)
   
   # check for inputs ====

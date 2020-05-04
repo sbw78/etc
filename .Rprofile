@@ -1,6 +1,21 @@
 # Heavily borrowed from Kevin Ushey (github.com/kevinushey/etc)
 
+# TEST SCRIPT
+
 invisible(local({
+  
+  NAME <- as.integer(c(66, 114, 121, 97, 110, 32, 87, 101, 115, 116))
+  EMAIL <- as.integer(c(115, 98, 119, 55, 56, 64, 99, 111, 114, 110, 101,
+                       108, 108, 46, 101, 100, 117))
+  
+  # Set devtools options
+  options("devtools.desc" = list(
+    Author = intToUtf8(NAME),
+    Maintainer = paste0(intToUtf8(NAME), " <", intToUtf8(EMAIL), ">"),
+    License = "MIT + file LICENSE",
+    Version = "0.0.1"
+  ))
+  options("devtools.name" = intToUtf8(NAME))
   
   # set TZ if unset ----
   if (is.na(Sys.getenv("TZ", unset = NA)))
@@ -16,47 +31,14 @@ invisible(local({
   # helpers for setting things in .__Rprofile.env__. ----
   set <- function(name, value)
     assign(name, value, envir = .__Rprofile.env__.)
-  
-  # Functions ----
-  set(".Start.time", as.numeric(Sys.time()))
-  
-  set("ht", function(d) rbind(head(d,10),tail(d,10)))
-  
-  set("hh", function(d) d[1:5,1:5])
-  
-  set("last", function(x){
-    x[length(x)]
-  })
-  
-  set("install_load_packages", function() {
-    packages <- get("packages", envir = globalenv())
-    installed_packages <- packages %in% rownames(installed.packages())
-    
-    if (any(installed_packages == FALSE)) {
-      install.packages(packages[!installed_packages])
-    } else {
-      message("\n ...Packages were already installed.\n")
-    }
-    
-    attached <- search()
-    attached_packages <- attached[grepl("package", attached)]
-    need_to_attach <- packages[which(!packages %in% gsub("package", "", attached_packages))]
-    
-    if (length(need_to_attach > 0)) {
-      invisible(lapply(packages, require, character.only = TRUE))
-    } else {
-      message("\n ...Packages were already loaded.\n")
-    }
-    rm(packages)
-  })
-  
+
   # Source custom functions file ----
-  sys.source("~/Rmain/functions/custom-functions.R", envir = .__Rprofile.env__.)
+  sys.source("~/Rmain/dotfiles/functions/custom-functions.R", envir = .__Rprofile.env__.)
   
   # Set CRAN repo ----
   r <- getOption("repos")
   
-  r["CRAN"] <- "http://cran.rstudio.com"
+  r["CRAN"] <- "https://cran.rstudio.com"
   
   options(repos = r)
   # Options ----
@@ -73,7 +55,7 @@ invisible(local({
     warn = 1,
     
     # Scientific notation kicks in after 10 digits
-    scipen = 10
+    scipen = 10,
     
     max.print = 100
   )
@@ -94,12 +76,19 @@ invisible(local({
     return(FALSE)
   })
   
-  # display startup message(s)
+  # display startup message(s) ----
+  version <- "0.0.1"
+  version <- paste("Using .RProfile version ", version, "\n", sep = "")
+  
   msg <- if (length(.libPaths()) > 1)
-    "Using libraries at paths:\n"
+    "\nUsing libraries at paths:\n"
   else
-    "Using library at path:\n"
+    "\nUsing library at path:\n"
+  
   libs <- paste("-", .libPaths(), collapse = "\n")
-  message(msg, libs, sep = "")
+  workdir <- paste("Working directory: ", getwd(), "\n", sep = "")
+  functions <- paste("\nCustom functions installed:", paste("-", ls(pos = "local:rprofile"), collapse = "\n"), sep = "\n")
+  message(version, msg, libs, workdir, functions, sep = "")
   
 }))
+
