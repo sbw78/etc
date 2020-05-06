@@ -1,14 +1,14 @@
 # Heavily borrowed from Kevin Ushey (github.com/kevinushey/etc)
 
-# TEST SCRIPT
+# READY FOR USE
 
 invisible(local({
-  
+  # Set name and email safely ----
   NAME <- as.integer(c(66, 114, 121, 97, 110, 32, 87, 101, 115, 116))
   EMAIL <- as.integer(c(115, 98, 119, 55, 56, 64, 99, 111, 114, 110, 101,
                        108, 108, 46, 101, 100, 117))
   
-  # Set devtools options
+  # Set devtools options ----
   options("devtools.desc" = list(
     Author = intToUtf8(NAME),
     Maintainer = paste0(intToUtf8(NAME), " <", intToUtf8(EMAIL), ">"),
@@ -33,7 +33,7 @@ invisible(local({
     assign(name, value, envir = .__Rprofile.env__.)
 
   # Source custom functions file ----
-  sys.source("~/Rmain/dotfiles/functions/custom-functions.R", envir = .__Rprofile.env__.)
+  sys.source("~/Rmain/etc/functions/custom-functions.R", envir = .__Rprofile.env__.)
   
   # Set CRAN repo ----
   r <- getOption("repos")
