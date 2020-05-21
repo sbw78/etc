@@ -86,9 +86,8 @@ invisible(local({
     "\nUsing library at path:\n"
   
   libs <- paste("-", .libPaths(), collapse = "\n")
-  workdir <- paste("Working directory: ", getwd(), "\n", sep = "")
   functions <- paste("\nCustom functions installed:", paste("-", ls(pos = "local:rprofile"), collapse = "\n"), sep = "\n")
-  message(version, msg, libs, workdir, functions, sep = "")
+  message(version, msg, libs, functions, sep = "")
   
 }))
 

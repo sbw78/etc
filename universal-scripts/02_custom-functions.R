@@ -12,7 +12,7 @@
 
 # Get first 10 and last 10 rows ------------------------------------------------
 ht <- function(d) {
-  rbind(head(d,10),tail(d,10))
+  rbind(utils::head(d,10), utils::tail(d,10))
 }
 
 # Get first 5 each of rows, columns --------------------------------------------
@@ -25,11 +25,25 @@ last <- function(x) {
   x[length(x)]
 }
 
+# Standard error ---------------------------------------------------------------
+se <- function(x, na.rm = FALSE) {
+  stdev <- stats::sd(x, na.rm = na.rm)
+  if (na.rm) {
+    n <- length(x[!is.na(x)])
+  } else {
+    n <- length(x)
+  }
+  stdev / sqrt(n)
+}
+
 # Install packages -------------------------------------------------------------
 install_load_packages <- function() {
   packages <- get("packages", envir = globalenv())
-  github_packages <- get("github_packages", envir = globalenv())
-
+  if(exists("github_packages", envir = globalenv())) {
+    github_packages <- get("github_packages", envir = globalenv())
+  } else {
+    github_packages <- NULL
+  }
   installed_packages <- packages %in% rownames(utils::installed.packages())
   installed_github_packages <- 
     github_packages$package %in% rownames(utils::installed.packages())
@@ -49,10 +63,14 @@ install_load_packages <- function() {
   attached <- search()
   attached_packages <- attached[grepl("package", attached)]
   need_to_attach <- 
-    c(packages[which(!packages %in% gsub("package", "", attached_packages))],
-      github_packages$package[which(!github_packages$package %in% gsub(
-        "package", "", attached_packages))])
-  packages <- c(packages, github_packages$package)
+    c(packages[which(!packages %in% gsub("package", "", attached_packages))])
+  if (!is.null(github_packages)) {
+    need_to_attach <- 
+      append(need_to_attach,
+             github_packages$package[which(!github_packages$package %in% gsub(
+               "package", "", attached_packages))])
+    packages <- c(packages, github_packages$package)
+  } 
   
   if (length(need_to_attach > 0)) {
     invisible(lapply(packages, require, character.only = TRUE))
@@ -73,13 +91,15 @@ regex_build <- function(list, modifier = "single") {
   } else {
     stop("You must define modifier as either 'single' or 'multi'.")
   }
-  map(list, ~ paste0(custom_left, .x, custom_right)) %>% 
-    reduce(~ paste(.x, .y, sep = "|"))
-  }
+  out <- lapply(list, FUN = function(x) {paste0(custom_left, x, custom_right)})
+  # out <- purrr::map(list, ~ paste0(custom_left, .x, custom_right))
+  Reduce(function(x, y) {paste(x, y, sep = "|")}, out)
+  # reduce(out, ~ paste(.x, .y, sep = "|"))
+}
 
 # Format p-value ---------------------------------------------------------------
 format_pval <- function(p, digits = 3) {
-  pvalue_chr <- p %>% round(digits = digits) %>% as.character()
+  pvalue_chr <- as.character(round(p, digits = digits))
   if (digits == 3)
     pformat <- ifelse(p < 0.001, "< .001", pvalue_chr)
   else if (digits == 2)
@@ -88,34 +108,84 @@ format_pval <- function(p, digits = 3) {
 }
 
 # Custom kable function for tables ---------------------------------------------
-custom_kable <- function(data, digits = 3, caption = NA, col.names = NA) {
-  knitr::kable(data, 
-               booktabs = TRUE,
-               digits = digits, 
-               caption = caption, 
-               col.names = col.names) %>% 
-    kableExtra::kable_styling(latex_options = c("HOLD_position"), 
-                              position = "left",
-                              full_width = F)
+custom_kable <- function(data,
+                         digits = 3,
+                         caption = NA,
+                         col.names = NA,
+                         row.names = NA,
+                         format = NULL,
+                         escape = TRUE,
+                         format.args = list()) {
+  
+  out_table <- knitr::kable(data,
+                            escape = escape,
+                            format = format,
+                            booktabs = TRUE,
+                            digits = digits,
+                            format.args = format.args,
+                            caption = caption,
+                            col.names = col.names,
+                            row.names = row.names)
+  
+  kableExtra::kable_styling(out_table, latex_options = c("HOLD_position"),
+                            position = "left",
+                            full_width = F)
 }
 
 # Create dataframe with bootstrapped 95% confidence intervals ------------------
 # (default 1000 samples) 
-ci_boot_df <- function(x, var = "value", B = NULL) {
+ci_boot_df <- function(.data, .summary_var, ..., ci = 0.95, groups_col = FALSE, 
+                       B = 1000) {
+  require(dplyr)
+  # check function args ----
+  df <- .data
+  if (missing(.summary_var)) {
+    stop("No numeric variable defined")
+  }
+  if (!is.logical(groups_col)) {
+    groups_col <- FALSE
+  }
+  
+  if(!missing(...)) {
+    group_vars <- dplyr::enquos(..., .named = TRUE)
+    groups_nm <- paste0(names(group_vars), collapse = ":")
+    df <- dplyr::group_by(df, !!!group_vars)
+  }
   if (is.null(B)) {
     B <- 1000
-  } else {
-    B <- B
   }
-  boot_df <- rbind(Hmisc::smean.cl.boot(x[[var]], !!B)) %>% 
-    data.frame %>% 
-    setNames(c("mean", "conf.low", "conf.high"))
-  return(boot_df)
+  # Create function variables ----
+  summary_var <- dplyr::enquo(.summary_var)
+  ci_quo <- dplyr::enquo(ci)
+  summary_nm <- paste0("mean_", dplyr::quo_name(summary_var))
+  
+  # Build output df ----
+  boot_df <- dplyr::summarize(df,
+                              ci_out = Hmisc::smean.cl.boot(!!summary_var, 
+                                                            conf.int = ci
+                                                            , B = 1000),
+                              conf = c(paste0("mean"), "ci_low", "ci_high"),
+                              sd = stats::sd(!!summary_var, na.rm = TRUE),
+                              n = dplyr::n())
+  boot_df <- dplyr::ungroup(boot_df)
+  boot_df <- tidyr::pivot_wider(boot_df, names_from = conf, values_from = ci_out)
+  boot_df <- dplyr::relocate(boot_df, sd, .after = ci_high)
+  
+  # create groups_col ----
+  if (groups_col) {
+    tidyr::unite(data = boot_df, col = "group",
+          c(!!!group_vars), remove = TRUE)
+  } else {
+    boot_df
+  }
 }
 
-# Build (optional grouping) dataframe with 95% CI ====
+
+# Build (optional grouping) dataframe with 95% CI ------------------------------
 ci_df <- function(.data, .summary_var, ..., ci = 0.95, groups_col = FALSE) {
-  # check function args =====
+  require(dplyr)
+  # check function args ----
+  df <- .data
   if (missing(.summary_var)) {
     stop("No numeric variable defined")
   }
@@ -125,30 +195,32 @@ ci_df <- function(.data, .summary_var, ..., ci = 0.95, groups_col = FALSE) {
   }
   
   if (!missing(...)) {
-    group_vars <- enquos(..., .named = TRUE)
+    group_vars <- dplyr::enquos(..., .named = TRUE)
     groups_nm <- paste0(names(group_vars), collapse = ":")
-    df <- df %>% group_by(!!!group_vars)
+    df <- dplyr::group_by(df, !!!group_vars)
   }
-  # create function variables =====
-  summary_var <- enquo(.summary_var)
-  ci_quo <- enquo(ci)
-  summary_nm <- paste0("mean_", quo_name(summary_var))
+  # create function variables ----
+  summary_var <- dplyr::enquo(.summary_var)
+  ci_quo <- dplyr::enquo(ci)
+  summary_nm <- paste0("mean_", dplyr::quo_name(summary_var))
   
-  # build final df =====
-  conf_df <- summarize(df,
-                       ci_out = Hmisc::smean.cl.normal(!!summary_var, 
-                                                       conf.int = ci),
-                       conf = c(paste0(summary_nm), "ci_low", "ci_high"),
-                       n = n()) %>% 
-    ungroup() %>% 
-    pivot_wider(names_from = conf, values_from = ci_out)
+  # build final df ----
+  conf_df <- dplyr::summarize(df,
+                              ci_out = Hmisc::smean.cl.normal(!!summary_var, 
+                                                              conf.int = ci),
+                              conf = c(paste0(summary_nm), "ci_low", "ci_high"),
+                              sd = stats::sd(!!summary_var, na.rm = TRUE),
+                              n = dplyr::n())
+  conf_df <- dplyr::ungroup(conf_df)
+  conf_df <- tidyr::pivot_wider(conf_df, names_from = conf, values_from = ci_out)
+  conf_df <- dplyr::relocate(conf_df, sd, .after = ci_high)
   
-  # create groups_col ===== 
+  # create groups_col ---- 
   if (groups_col == TRUE) {
-    return(unite(data = conf_df, col = "group", 
-                 c(!!!group_vars), remove = FALSE))
+    dplyr::unite(data = conf_df, col = "group", 
+          c(!!!group_vars), remove = TRUE)
   } else {
-    return(conf_df)
+    conf_df
   }
 }
 
@@ -168,18 +240,19 @@ forestplot_new <- function(d, .measure_var, .group_var,
     stop("Must provide at least one argument for '.group_var'")
   }
   
-  # get function args =====
-  measure_var <- enquo(.measure_var)
-  group_var <- enquo(.group_var)
+  # get function args ----
+  measure_var <- dplyr::enquo(.measure_var)
+  group_var <- dplyr::enquo(.group_var)
   
-  # build plot  =====
-  p <- ggplot(
+  # build plot  ----
+  p <- ggplot2::ggplot(
     d, aes(x = !!measure_var, y = !!group_var, 
            xmin = ci_low, xmax = ci_high)) + # uses default colnames from ci_df
-    geom_pointrange(shape = 18) + 
-    geom_vline(lty=2, xintercept = xintercept) +
-    ylab(ylab) + 
-    xlab(xlab)
+    ggplot2::geom_pointrange(shape = 18) + 
+    ggplot2::geom_vline(lty=2, xintercept = xintercept) +
+    ggplot2::ylab(ylab) + 
+    ggplot2::xlab(xlab)
   
   return(p)
 }
+
