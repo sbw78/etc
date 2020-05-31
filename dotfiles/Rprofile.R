@@ -4,18 +4,35 @@
 
 invisible(local({
   # Set name and email safely ----
-  NAME <- as.integer(c(66, 114, 121, 97, 110, 32, 87, 101, 115, 116))
+  FIRSTNAME <- as.integer(c(83, 46, 32, 66, 114, 121, 97, 110))
+  LASTNAME <- as.integer(c(87, 101, 115, 116))
+  NAME <- as.integer(c(83, 46, 32, 66, 114, 121, 97, 110, 32, 87, 101, 115, 116))
   EMAIL <- as.integer(c(115, 98, 119, 55, 56, 64, 99, 111, 114, 110, 101,
                        108, 108, 46, 101, 100, 117))
   
   # Set devtools options ----
-  options("devtools.desc" = list(
+  options(
+    "devtools.desc" = list(
     Author = intToUtf8(NAME),
     Maintainer = paste0(intToUtf8(NAME), " <", intToUtf8(EMAIL), ">"),
     License = "MIT + file LICENSE",
     Version = "0.0.1"
   ))
   options("devtools.name" = intToUtf8(NAME))
+  
+  # Set usethis github options ----
+  options(
+    usethis.full_name = intToUtf8(NAME),
+    usethis.protocol = "ssh",
+    usethis.description = list(
+      "Authors@R" = utils::person(
+        intToUtf8(FIRSTNAME), intToUtf8(LASTNAME),
+        email = intToUtf8(EMAIL),
+        role = c("aut", "cre", "dtc"),
+        comment = c(ORCID = "0000-0003-3327-0499")
+      )
+    )
+  )
   
   # set TZ if unset ----
   if (is.na(Sys.getenv("TZ", unset = NA)))
