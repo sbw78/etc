@@ -16,7 +16,7 @@ invisible(local({
     Author = intToUtf8(NAME),
     Maintainer = paste0(intToUtf8(NAME), " <", intToUtf8(EMAIL), ">"),
     License = "MIT + file LICENSE",
-    Version = "0.0.1"
+    Version = "0.0.0.9000"
   ))
   options("devtools.name" = intToUtf8(NAME))
   
@@ -50,7 +50,8 @@ invisible(local({
     assign(name, value, envir = .__Rprofile.env__.)
 
   # Source custom functions file ----
-  sys.source("~/Rmain/etc/functions/custom-functions.R", envir = .__Rprofile.env__.)
+  # Remove and replace with my custom package
+  # sys.source("~/Rmain/etc/functions/custom-functions.R", envir = .__Rprofile.env__.)
   
   # Set CRAN repo ----
   r <- getOption("repos")
@@ -94,7 +95,7 @@ invisible(local({
   })
   
   # display startup message(s) ----
-  version <- "0.0.1"
+  version <- "0.0.2"
   version <- paste("Using .RProfile version ", version, "\n", sep = "")
   
   msg <- if (length(.libPaths()) > 1)
@@ -103,8 +104,11 @@ invisible(local({
     "\nUsing library at path:\n"
   
   libs <- paste("-", .libPaths(), collapse = "\n")
-  functions <- paste("\nCustom functions installed:", paste("-", ls(pos = "local:rprofile"), collapse = "\n"), sep = "\n")
-  message(version, msg, libs, functions, sep = "")
-  
+  # functions <- paste("\nCustom functions installed:", 
+  #                    paste("-", ls(pos = "local:rprofile"), 
+  #                          collapse = "\n"), sep = "\n")
+  message(version, msg, libs, 
+          # functions, 
+          sep = "")
 }))
 
