@@ -46,8 +46,8 @@ invisible(local({
   .__Rprofile.env__. <- attach(NULL, name = "local:rprofile")
   
   # helpers for setting things in .__Rprofile.env__. ----
-  set <- function(name, value)
-    assign(name, value, envir = .__Rprofile.env__.)
+  # set <- function(name, value)
+  #   assign(name, value, envir = .__Rprofile.env__.)
 
   # Source custom functions file ----
   # Remove and replace with my custom package
