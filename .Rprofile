@@ -46,19 +46,18 @@ invisible(local({
   .__Rprofile.env__. <- attach(NULL, name = "local:rprofile")
   
   # helpers for setting things in .__Rprofile.env__. ----
-  set <- function(name, value)
-    assign(name, value, envir = .__Rprofile.env__.)
+  # set <- function(name, value)
+  #   assign(name, value, envir = .__Rprofile.env__.)
 
   # Source custom functions file ----
   # Remove and replace with my custom package
   # sys.source("~/Rmain/etc/functions/custom-functions.R", envir = .__Rprofile.env__.)
   
   # Set CRAN repo ----
-  r <- getOption("repos")
+  # r <- getOption("repos")
+  # r["CRAN"] <- "https://cran.rstudio.com"
+  # options(repos = r)
   
-  r["CRAN"] <- "https://cran.rstudio.com"
-  
-  options(repos = r)
   # Options ----
   options(
     # no fancy quotes (makes copy + paste a pain)

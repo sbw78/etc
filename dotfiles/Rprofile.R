@@ -54,11 +54,10 @@ invisible(local({
   # sys.source("~/Rmain/etc/functions/custom-functions.R", envir = .__Rprofile.env__.)
   
   # Set CRAN repo ----
-  r <- getOption("repos")
+  # r <- getOption("repos")
+  # r["CRAN"] <- "https://cran.rstudio.com"
+  # options(repos = r)
   
-  r["CRAN"] <- "https://cran.rstudio.com"
-  
-  options(repos = r)
   # Options ----
   options(
     # no fancy quotes (makes copy + paste a pain)

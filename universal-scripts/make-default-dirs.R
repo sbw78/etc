@@ -22,7 +22,7 @@ start_project <- function(variables) {
   destination <- "command_files"
   
   for (i in seq_along(subdirs)) {
-    if (file.exists(here::here(subdirs[i]))) {
+    if (dir.exists(here::here(subdirs[i]))) {
       message(paste(subdirs[i], "already exists."))
       Sys.sleep(0.1)
     } else {
